@@ -3,9 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Paul & Sneha - Wedding Invitation</title>
+    <title>Surya & Sneha - Wedding Invitation</title>
+    <meta name="description" content="You're invited to the wedding of Paul Kevin Surya & Sneha Radhakrishnan — April 22-23, 2026 at Sree Padmaleela Kalyana Mandapam, Kovilpatti.">
+
+    <!-- Open Graph / Link Preview -->
+    <meta property="og:title" content="Surya & Sneha - Wedding Invitation">
+    <meta property="og:description" content="Join us for the wedding of Paul Kevin Surya & Sneha Radhakrishnan — April 22-23, 2026, Kovilpatti.">
+    <meta property="og:image" content="thumbnail.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:type" content="website">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Surya & Sneha - Wedding Invitation">
+    <meta name="twitter:description" content="Join us for the wedding of Paul Kevin Surya & Sneha Radhakrishnan — April 22-23, 2026, Kovilpatti.">
+    <meta name="twitter:image" content="thumbnail.png">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="luxury.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
 </head>
 <body>
     <!-- Curtain Reveal -->
@@ -147,6 +164,16 @@
         </div>
         <div class="spotlight"></div>
         <div class="spotlight spotlight-2"></div>
+        <div class="curtain-tap" id="curtain-tap">
+            <div class="tap-icon">👆</div>
+            <p class="tap-text">Tap to Open</p>
+        </div>
+    </div>
+
+    <!-- Background -->
+    <div id="bg-wrap">
+        <img src="background.png" alt="" id="bg-img">
+        <div id="bg-overlay"></div>
     </div>
 
     <!-- Gold Particles -->
@@ -154,11 +181,6 @@
     <!-- Rose Petals -->
     <canvas id="petals" class="petals-canvas"></canvas>
 
-    <!-- Animated Background -->
-    <div class="luxury-bg">
-        <img src="background.png" alt="Royal Palace" class="bg-image">
-        <div class="bg-overlay"></div>
-    </div>
 
     <!-- Hero Section -->
     <section class="hero">
@@ -220,7 +242,7 @@
 
                         <div class="family-row">
                             <p class="family-row-role">Brother</p>
-                            <p class="family-row-names">Sharon Ramalingam</p>
+                            <p class="family-row-names">Shri. Sharon Ramalingam</p>
                         </div>
                     </div>
                 </div>
@@ -337,20 +359,29 @@
                     <div class="event-item">
                         <div class="event-content">
                             <h3>🌤️ Weather &amp; Outfit</h3>
-                            <p class="info-tagline">Welcome to Chennai's premium summer experience.</p>
-                            <p class="event-date">Morning: light silks &amp; breathable kurtas.</p>
-                            <p class="event-time">Evening: time for the glow-up. ✨</p>
-                            <p class="info-joke">Dressed too heavy? You're basically attending a sauna.</p>
+                            <p class="info-tagline">Welcome to Kovilpatti's premium summer experience.</p>
+                            <p class="event-date">Morning Muhurtham: light silk sarees &amp; breathable traditional attire. Keep it classic &amp; comfortable.</p>
+                            <p class="event-time">Evening Engagement/Reception: Time for the glow-up. ✨</p>
                         </div>
                     </div>
 
                     <div class="event-item highlight">
                         <div class="event-content">
                             <h3>🕺 Dance Floor Policy</h3>
-                            <p class="event-date">Professional dancers: welcome.</p>
-                            <p class="event-date">Non-dancers: <em>especially</em> welcome.</p>
-                            <p class="event-time">Talent optional. <strong>Confidence mandatory.</strong></p>
+                            <p class="event-date">Professional dancers: Welcome.</p>
+                            <p class="event-date">Non-dancers: Especially welcome.</p>
+                            <p class="event-time">Confidence &gt; Talent.</p>
                             <p class="info-joke">Someone's uncle will start the battle. It's tradition.</p>
+                        </div>
+                    </div>
+
+                    <div class="event-item highlight">
+                        <div class="event-content">
+                            <h3>🗳️ Plot Twist: It's Also Election Day</h3>
+                            <p class="info-tagline">Tamil Nadu has decided our wedding day is the perfect time to also run a democracy.</p>
+                            <p class="event-date">Expect checkpoints, diversions, and roads that suddenly have opinions.</p>
+                            <p class="event-time">Leave early. Seriously. Like, embarrassingly early.</p>
+                            <p class="info-joke">The government changes every five years. This wedding? Forever. 💍</p>
                         </div>
                     </div>
 
@@ -390,6 +421,6 @@
         <div class="footer-hearts">♥ ♥ ♥</div>
     </footer>
 
-    <script src="script.js"></script>
+    <script src="script.js" defer></script>
 </body>
 </html>
