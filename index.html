@@ -63,18 +63,10 @@
                         <stop offset="50%" stop-color="#d4af37" stop-opacity="0.8"/>
                         <stop offset="100%" stop-color="#8b6010" stop-opacity="0.6"/>
                     </radialGradient>
-                    <filter id="heartGlow">
-                        <feGaussianBlur stdDeviation="4" result="blur"/>
-                        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                    </filter>
-                    <filter id="wingGlow">
-                        <feGaussianBlur stdDeviation="3" result="blur"/>
-                        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                    </filter>
                 </defs>
 
                 <!-- LEFT WING -->
-                <g class="wing wing-left" filter="url(#wingGlow)">
+                <g class="wing wing-left">
                     <!-- Primary feather mass -->
                     <path d="M158 105
                         C148 88, 120 65, 88 52
@@ -97,7 +89,7 @@
                 </g>
 
                 <!-- RIGHT WING -->
-                <g class="wing wing-right" filter="url(#wingGlow)">
+                <g class="wing wing-right">
                     <path d="M182 105
                         C192 88, 220 65, 252 52
                         C280 40, 312 38, 332 50
@@ -117,7 +109,7 @@
                 </g>
 
                 <!-- HEART BODY -->
-                <g class="heart-body" filter="url(#heartGlow)">
+                <g class="heart-body">
                     <!-- Outer glow ring -->
                     <path d="M170 158
                         C170 158, 128 132, 122 108
@@ -176,7 +168,7 @@
 
     <!-- Background -->
     <div id="bg-wrap">
-        <img src="background.png" alt="" id="bg-img">
+        <img src="background.jpg" alt="" id="bg-img">
         <div id="bg-overlay"></div>
     </div>
 
