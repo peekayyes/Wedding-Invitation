@@ -1,20 +1,34 @@
-gsap.registerPlugin(ScrollTrigger);
+try { gsap.registerPlugin(ScrollTrigger); } catch(e) {}
 
-// Shared state
 let particlesRAF = null;
 let petalsRAF = null;
 let paused = false;
+let resizeTimer;
+const resizeCallbacks = [];
 
-document.addEventListener('DOMContentLoaded', () => {
-    startCountdown();
-    fetchWeather();
-    initParticles();
-    initPetals();
-    initCurtainSequence();
-    initVisibilityPause();
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => resizeCallbacks.forEach(fn => fn()), 150);
 });
 
-// ── Pause canvas loops when tab is hidden ──────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        startCountdown();
+        fetchWeather();
+        initParticles();
+        initPetals();
+        initCurtainSequence();
+        initVisibilityPause();
+    } catch(e) {
+        // Fallback: show everything if JS fails
+        document.body.classList.add('enable-scroll');
+        document.querySelectorAll('.hero, .countdown-luxury, .events-luxury, .venue-luxury, .families-section, .things-to-know, .luxury-footer')
+            .forEach(el => el.style.opacity = '1');
+        const overlay = document.getElementById('curtain-overlay');
+        if (overlay) overlay.style.display = 'none';
+    }
+});
+
 function initVisibilityPause() {
     document.addEventListener('visibilitychange', () => {
         paused = document.hidden;
@@ -25,179 +39,120 @@ function initVisibilityPause() {
     });
 }
 
-// ── Debounced resize ───────────────────────────────────────────────────────
-let resizeTimer;
-const resizeCallbacks = [];
-window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => resizeCallbacks.forEach(fn => fn()), 150);
-});
-
-// ── Curtain → Heart → Hero bloom sequence ──────────────────────────────────
 function initCurtainSequence() {
     const overlay   = document.getElementById('curtain-overlay');
     const heart     = document.getElementById('curtain-heart');
     const hero      = document.querySelector('.hero');
+    const tapPrompt = document.getElementById('curtain-tap');
+
+    if (!overlay || !heart || !hero) return;
+
     const wingLeft  = document.querySelector('.wing-left');
     const wingRight = document.querySelector('.wing-right');
     const heartBody = document.querySelector('.heart-body');
 
-    // Kill CSS animations — GSAP takes over
-    [wingLeft, wingRight, heartBody].forEach(el => el.style.animation = 'none');
+    if (wingLeft)  wingLeft.style.animation = 'none';
+    if (wingRight) wingRight.style.animation = 'none';
+    if (heartBody) heartBody.style.animation = 'none';
 
     gsap.set(hero, { opacity: 0 });
     gsap.set(heart, { opacity: 0, scale: 0.3, xPercent: -50, yPercent: -50, x: 0, y: 80 });
 
-    const tapPrompt = document.getElementById('curtain-tap');
-
-    // Wait for user tap
     function startReveal() {
-        tapPrompt.removeEventListener('click', startReveal);
+        if (tapPrompt) {
+            tapPrompt.removeEventListener('click', startReveal);
+            gsap.to(tapPrompt, { opacity: 0, scale: 0.8, duration: 0.4, ease: 'power2.in', onComplete: () => tapPrompt.style.display = 'none' });
+        }
         overlay.removeEventListener('click', startReveal);
-
-        // Fade out tap prompt
-        gsap.to(tapPrompt, { opacity: 0, scale: 0.8, duration: 0.4, ease: 'power2.in', onComplete: () => tapPrompt.style.display = 'none' });
-
-        runCurtainTimeline();
+        runTimeline();
     }
 
-    tapPrompt.addEventListener('click', startReveal);
+    if (tapPrompt) tapPrompt.addEventListener('click', startReveal);
     overlay.addEventListener('click', startReveal);
 
-    function runCurtainTimeline() {
-    let wingTweens = [];
-    const tl = gsap.timeline();
+    function runTimeline() {
+        let wingTweens = [];
+        const tl = gsap.timeline();
 
-    // 1 — curtains open + rod/valance exit
-    tl.to('.curtain-left',  { x: '-100%', duration: 2.8, ease: 'power3.inOut' }, 0)
-      .to('.curtain-right', { x:  '100%', duration: 2.8, ease: 'power3.inOut' }, 0)
-      .to('.curtain-rod', { y: -50, opacity: 0, duration: 1.4, ease: 'power2.inOut' }, 0.3)
-      .to('.curtain-valance', { y: -60, opacity: 0, duration: 1.6, ease: 'power2.inOut' }, 0.1);
+        tl.to('.curtain-left',  { x: '-100%', duration: 2.8, ease: 'power3.inOut' }, 0)
+          .to('.curtain-right', { x:  '100%', duration: 2.8, ease: 'power3.inOut' }, 0)
+          .to('.curtain-rod',     { y: -50, opacity: 0, duration: 1.4, ease: 'power2.inOut' }, 0.3)
+          .to('.curtain-valance', { y: -60, opacity: 0, duration: 1.6, ease: 'power2.inOut' }, 0.1);
 
-    // 2 — heart arrives
-    tl.to(heart, {
-        opacity: 1, scale: 1, y: 0,
-        duration: 1.4,
-        ease: 'back.out(1.8)'
-    }, 0.3);
+        tl.to(heart, { opacity: 1, scale: 1, y: 0, duration: 1.4, ease: 'back.out(1.8)' }, 0.3);
 
-    // 3 — wings flap
-    tl.add(() => {
-        wingTweens.push(
-            gsap.to(wingLeft,  { scaleY: 0.6, rotation: -5, duration: 0.45, ease: 'power1.inOut', yoyo: true, repeat: -1, transformOrigin: '158px 105px' }),
-            gsap.to(wingRight, { scaleY: 0.6, rotation:  5, duration: 0.45, ease: 'power1.inOut', yoyo: true, repeat: -1, transformOrigin: '182px 105px' }),
-            gsap.to(heartBody, { y: -10, duration: 1.2, ease: 'sine.inOut', yoyo: true, repeat: -1, transformOrigin: '170px 115px' })
-        );
-    }, 1.2);
+        tl.add(() => {
+            if (wingLeft)  wingTweens.push(gsap.to(wingLeft,  { scaleY: 0.6, rotation: -5, duration: 0.45, ease: 'power1.inOut', yoyo: true, repeat: -1, transformOrigin: '158px 105px' }));
+            if (wingRight) wingTweens.push(gsap.to(wingRight, { scaleY: 0.6, rotation:  5, duration: 0.45, ease: 'power1.inOut', yoyo: true, repeat: -1, transformOrigin: '182px 105px' }));
+            if (heartBody) wingTweens.push(gsap.to(heartBody, { y: -10, duration: 1.2, ease: 'sine.inOut', yoyo: true, repeat: -1, transformOrigin: '170px 115px' }));
+        }, 1.2);
 
-    // 4 — heart departs
-    tl.add(() => {
-        wingTweens.forEach(t => t.kill());
-        wingTweens = [];
-    }, 2.8);
-    tl.to(heart, {
-        y: -280, scale: 0.1, opacity: 0,
-        duration: 0.9,
-        ease: 'power2.in'
-    }, 2.8);
+        tl.add(() => { wingTweens.forEach(t => t.kill()); wingTweens = []; }, 2.8);
+        tl.to(heart, { y: -280, scale: 0.1, opacity: 0, duration: 0.9, ease: 'power2.in' }, 2.8);
 
-    // 5 — hide overlay, show hero
-    tl.add(() => {
-        overlay.style.display = 'none';
-        document.body.classList.add('enable-scroll');
-    }, 3.5);
+        tl.add(() => {
+            overlay.style.display = 'none';
+            document.body.classList.add('enable-scroll');
+        }, 3.5);
 
-    tl.to(hero, {
-        opacity: 1,
-        duration: 1.2,
-        ease: 'power3.out'
-    }, 3.5);
+        tl.to(hero, { opacity: 1, duration: 1.2, ease: 'power3.out' }, 3.5);
+        tl.to('.hero .vintage-paper', { opacity: 1, duration: 1, ease: 'power2.out' }, 3.7);
+        tl.from('.hero .paper-content > *', { opacity: 0, duration: 0.7, stagger: 0.15, ease: 'power2.out' }, 3.9);
 
-    // 6 — hero paper
-    tl.to('.hero .vintage-paper', {
-        opacity: 1,
-        duration: 1,
-        ease: 'power2.out'
-    }, 3.7);
-
-    // 7 — hero content
-    tl.from('.hero .paper-content > *', {
-        opacity: 0,
-        duration: 0.7,
-        stagger: 0.15,
-        ease: 'power2.out'
-    }, 3.9);
-
-    // 8 — typewriter + scroll reveals
-    tl.add(() => {
-        initTypewriter('"Our hearts were dealt."', 'hero-quote');
-        initScrollReveal();
-        initTilt();
-    }, 6.2 - 1.5);
-    } // end runCurtainTimeline
+        tl.add(() => {
+            initTypewriter('"Our hearts were dealt."', 'hero-quote');
+            initScrollReveal();
+            initTilt();
+        }, 4.7);
+    }
 }
 
-// ── Scroll reveals with GSAP ScrollTrigger ─────────────────────────────────
 function initScrollReveal() {
-    gsap.set('.countdown-luxury, .events-luxury, .venue-luxury, .families-section, .things-to-know, .luxury-footer', { opacity: 1 });
+    try {
+        gsap.set('.countdown-luxury, .events-luxury, .venue-luxury, .families-section, .things-to-know, .luxury-footer', { opacity: 1 });
 
-    gsap.utils.toArray('.section-heading').forEach(el => {
-        gsap.from(el, {
-            opacity: 0, y: 40, duration: 0.9, ease: 'power3.out',
-            scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' }
+        gsap.utils.toArray('.section-heading').forEach(el => {
+            gsap.from(el, { opacity: 0, y: 40, duration: 0.9, ease: 'power3.out',
+                scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' } });
         });
-    });
 
-    gsap.set('.countdown-item', { opacity: 1, y: 0, scale: 1 });
-    gsap.from('.countdown-item', {
-        opacity: 0, y: 40, scale: 0.9, duration: 0.6, stagger: 0.1,
-        ease: 'back.out(1.4)', clearProps: 'all',
-        scrollTrigger: { trigger: '.countdown-grid', start: 'top 85%', toggleActions: 'play none none none' }
-    });
+        gsap.set('.countdown-item', { opacity: 1, y: 0, scale: 1 });
+        gsap.from('.countdown-item', { opacity: 0, y: 40, scale: 0.9, duration: 0.6, stagger: 0.1,
+            ease: 'back.out(1.4)', clearProps: 'all',
+            scrollTrigger: { trigger: '.countdown-grid', start: 'top 85%', toggleActions: 'play none none none' } });
 
-    gsap.utils.toArray('.events-timeline .event-item').forEach((el, i) => {
-        gsap.from(el, {
-            opacity: 0, x: i % 2 === 0 ? -60 : 60, duration: 0.8, ease: 'power3.out',
-            scrollTrigger: { trigger: el, start: 'top 82%', toggleActions: 'play none none none' }
+        gsap.utils.toArray('.events-timeline .event-item').forEach((el, i) => {
+            gsap.from(el, { opacity: 0, x: i % 2 === 0 ? -60 : 60, duration: 0.8, ease: 'power3.out',
+                scrollTrigger: { trigger: el, start: 'top 82%', toggleActions: 'play none none none' } });
         });
-    });
 
-    gsap.from('.venue-card', {
-        opacity: 0, scale: 0.88, y: 30, duration: 1, ease: 'power3.out',
-        scrollTrigger: { trigger: '.venue-card', start: 'top 80%', toggleActions: 'play none none none' }
-    });
+        gsap.from('.venue-card', { opacity: 0, scale: 0.88, y: 30, duration: 1, ease: 'power3.out',
+            scrollTrigger: { trigger: '.venue-card', start: 'top 80%', toggleActions: 'play none none none' } });
 
-    gsap.from('.detail-item', {
-        opacity: 0, y: 30, duration: 0.6, stagger: 0.15, ease: 'power2.out',
-        scrollTrigger: { trigger: '.venue-details', start: 'top 82%', toggleActions: 'play none none none' }
-    });
+        gsap.from('.detail-item', { opacity: 0, y: 30, duration: 0.6, stagger: 0.15, ease: 'power2.out',
+            scrollTrigger: { trigger: '.venue-details', start: 'top 82%', toggleActions: 'play none none none' } });
 
-    gsap.utils.toArray('.family-card').forEach((el, i) => {
-        gsap.from(el, {
-            opacity: 0, x: i % 2 === 0 ? -50 : 50, duration: 0.8, ease: 'power3.out',
-            scrollTrigger: { trigger: el, start: 'top 82%', toggleActions: 'play none none none' }
+        gsap.utils.toArray('.family-card').forEach((el, i) => {
+            gsap.from(el, { opacity: 0, x: i % 2 === 0 ? -50 : 50, duration: 0.8, ease: 'power3.out',
+                scrollTrigger: { trigger: el, start: 'top 82%', toggleActions: 'play none none none' } });
         });
-    });
 
-    gsap.utils.toArray('.info-grid .event-item').forEach((el, i) => {
-        gsap.from(el, {
-            opacity: 0, y: 60, rotation: i % 2 === 0 ? -1.5 : 1.5, duration: 0.85, ease: 'power3.out',
-            scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' }
+        gsap.utils.toArray('.info-grid .event-item').forEach((el, i) => {
+            gsap.from(el, { opacity: 0, y: 60, rotation: i % 2 === 0 ? -1.5 : 1.5, duration: 0.85, ease: 'power3.out',
+                scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' } });
         });
-    });
 
-    gsap.from('.luxury-footer', {
-        opacity: 0, y: 40, duration: 1, ease: 'power2.out',
-        scrollTrigger: { trigger: '.luxury-footer', start: 'top 90%', toggleActions: 'play none none none' }
-    });
+        gsap.from('.luxury-footer', { opacity: 0, y: 40, duration: 1, ease: 'power2.out',
+            scrollTrigger: { trigger: '.luxury-footer', start: 'top 90%', toggleActions: 'play none none none' } });
 
-    gsap.from('.footer-hearts', {
-        opacity: 0, scale: 0.5, duration: 0.8, ease: 'back.out(2)',
-        scrollTrigger: { trigger: '.luxury-footer', start: 'top 88%', toggleActions: 'play none none none' }
-    });
+        gsap.from('.footer-hearts', { opacity: 0, scale: 0.5, duration: 0.8, ease: 'back.out(2)',
+            scrollTrigger: { trigger: '.luxury-footer', start: 'top 88%', toggleActions: 'play none none none' } });
+    } catch(e) {
+        document.querySelectorAll('.countdown-luxury, .events-luxury, .venue-luxury, .families-section, .things-to-know, .luxury-footer')
+            .forEach(el => el.style.opacity = '1');
+    }
 }
 
-// ── Countdown Timer ─────────────────────────────────────────────────────────
 function startCountdown() {
     const weddingDate = new Date('2026-04-23T10:30:00').getTime();
     let prev = { days: '', hours: '', minutes: '', seconds: '' };
@@ -211,17 +166,13 @@ function startCountdown() {
         if (prev[id] === val) return;
         prev[id] = val;
 
-        gsap.timeline()
-            .to(current, { opacity: 0, y: -8, duration: 0.18, ease: 'power1.in' })
-            .set(current, { textContent: val })
-            .to(current, { opacity: 1, y: 0, duration: 0.22, ease: 'power1.out' });
-
-        const item = el.closest('.countdown-item');
-        if (item) {
-            gsap.fromTo(item,
-                { boxShadow: '0 4px 15px rgba(0,0,0,0.15)' },
-                { boxShadow: '0 0 22px 4px rgba(212,175,55,0.45)', duration: 0.2, yoyo: true, repeat: 1, ease: 'power2.out' }
-            );
+        try {
+            gsap.timeline()
+                .to(current, { opacity: 0, y: -8, duration: 0.18, ease: 'power1.in' })
+                .set(current, { textContent: val })
+                .to(current, { opacity: 1, y: 0, duration: 0.22, ease: 'power1.out' });
+        } catch(e) {
+            current.textContent = val;
         }
     }
 
@@ -243,17 +194,20 @@ function startCountdown() {
     const interval = setInterval(updateCountdown, 1000);
 }
 
-// ── Weather ─────────────────────────────────────────────────────────────────
 function fetchWeather() {
     fetch('https://api.open-meteo.com/v1/forecast?latitude=9.1711&longitude=77.8711&current=temperature_2m,weather_code&timezone=Asia/Kolkata')
         .then(r => r.json())
         .then(data => {
-            document.getElementById('weather-temp').textContent = `${Math.round(data.current.temperature_2m)}°C`;
-            document.getElementById('weather-desc').textContent = getWeatherDescription(data.current.weather_code);
+            const temp = document.getElementById('weather-temp');
+            const desc = document.getElementById('weather-desc');
+            if (temp) temp.textContent = `${Math.round(data.current.temperature_2m)}°C`;
+            if (desc) desc.textContent = getWeatherDescription(data.current.weather_code);
         })
         .catch(() => {
-            document.getElementById('weather-temp').textContent = 'Pleasant Weather Expected';
-            document.getElementById('weather-desc').textContent = 'Perfect for celebrations';
+            const temp = document.getElementById('weather-temp');
+            const desc = document.getElementById('weather-desc');
+            if (temp) temp.textContent = 'Pleasant Weather Expected';
+            if (desc) desc.textContent = 'Perfect for celebrations';
         });
 }
 
@@ -264,7 +218,6 @@ function getWeatherDescription(code) {
     return map[code] || 'Pleasant Weather';
 }
 
-// ── Typewriter ───────────────────────────────────────────────────────────────
 function initTypewriter(text, elementId) {
     const el = document.getElementById(elementId);
     if (!el) return;
@@ -284,7 +237,6 @@ function initTypewriter(text, elementId) {
     setTimeout(type, 500);
 }
 
-// ── 3D tilt + hover lifts ────────────────────────────────────────────────────
 function initTilt() {
     document.querySelectorAll('.countdown-item').forEach(item => {
         item.addEventListener('pointermove', (e) => {
@@ -300,37 +252,29 @@ function initTilt() {
     });
 
     document.querySelectorAll('.event-item').forEach(card => {
-        card.addEventListener('mouseenter', () => {
-            gsap.to(card, { y: -10, boxShadow: '0 20px 50px rgba(212,175,55,0.35)', duration: 0.35, ease: 'power2.out' });
-        });
-        card.addEventListener('mouseleave', () => {
-            gsap.to(card, { y: 0, boxShadow: '0 4px 20px rgba(0,0,0,0.2)', duration: 0.5, ease: 'elastic.out(1, 0.6)' });
-        });
+        card.addEventListener('mouseenter', () => gsap.to(card, { y: -10, boxShadow: '0 20px 50px rgba(212,175,55,0.35)', duration: 0.35, ease: 'power2.out' }));
+        card.addEventListener('mouseleave', () => gsap.to(card, { y: 0, boxShadow: '0 4px 20px rgba(0,0,0,0.2)', duration: 0.5, ease: 'elastic.out(1, 0.6)' }));
     });
 
     document.querySelectorAll('.family-card').forEach(card => {
-        card.addEventListener('mouseenter', () => {
-            gsap.to(card, { y: -6, scale: 1.02, duration: 0.3, ease: 'power2.out' });
-        });
-        card.addEventListener('mouseleave', () => {
-            gsap.to(card, { y: 0, scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.6)' });
-        });
+        card.addEventListener('mouseenter', () => gsap.to(card, { y: -6, scale: 1.02, duration: 0.3, ease: 'power2.out' }));
+        card.addEventListener('mouseleave', () => gsap.to(card, { y: 0, scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.6)' }));
     });
 }
 
-// ── Gold Particles ──────────────────────────────────────────────────────────
+// ── Particles (reduced on mobile) ───────────────────────────────────────────
 let particlesCtx, particlesCanvas, particles;
+const isMobile = window.innerWidth < 768;
 
 function initParticles() {
     particlesCanvas = document.getElementById('particles');
     if (!particlesCanvas) return;
     particlesCtx = particlesCanvas.getContext('2d');
-
     function resize() { particlesCanvas.width = window.innerWidth; particlesCanvas.height = window.innerHeight; }
     resize();
     resizeCallbacks.push(resize);
 
-    const count = Math.min(25, Math.floor(window.innerWidth / 40));
+    const count = isMobile ? 10 : Math.min(25, Math.floor(window.innerWidth / 40));
     particles = Array.from({ length: count }, () => ({
         x: Math.random() * particlesCanvas.width,
         y: Math.random() * particlesCanvas.height,
@@ -340,7 +284,6 @@ function initParticles() {
         opacity: Math.random() * 0.5 + 0.2,
         flicker: Math.random() * Math.PI * 2
     }));
-
     particlesRAF = requestAnimationFrame(particlesLoop);
 }
 
@@ -349,41 +292,30 @@ function particlesLoop() {
     const ctx = particlesCtx, c = particlesCanvas;
     ctx.clearRect(0, 0, c.width, c.height);
     particles.forEach(p => {
-        p.y += p.speedY;
-        p.x += p.speedX;
-        p.flicker += 0.025;
+        p.y += p.speedY; p.x += p.speedX; p.flicker += 0.025;
         const alpha = p.opacity * (0.55 + 0.45 * Math.sin(p.flicker));
-
         if (p.y < -10) { p.y = c.height + 10; p.x = Math.random() * c.width; }
         if (p.x < -10) p.x = c.width + 10;
         if (p.x > c.width + 10) p.x = -10;
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(212,175,55,${alpha})`;
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * 2.5, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(212,175,55,${alpha * 0.15})`;
-        ctx.fill();
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(212,175,55,${alpha})`; ctx.fill();
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(212,175,55,${alpha * 0.15})`; ctx.fill();
     });
     particlesRAF = requestAnimationFrame(particlesLoop);
 }
 
-// ── Rose Petals ──────────────────────────────────────────────────────────────
 let petalsCtx, petalsCanvas, petals;
 
 function initPetals() {
     petalsCanvas = document.getElementById('petals');
     if (!petalsCanvas) return;
     petalsCtx = petalsCanvas.getContext('2d');
-
     function resize() { petalsCanvas.width = window.innerWidth; petalsCanvas.height = window.innerHeight; }
     resize();
     resizeCallbacks.push(resize);
 
-    const count = Math.min(10, Math.floor(window.innerWidth / 80));
+    const count = isMobile ? 5 : Math.min(10, Math.floor(window.innerWidth / 80));
     petals = Array.from({ length: count }, () => ({
         x: Math.random() * petalsCanvas.width,
         y: Math.random() * petalsCanvas.height - petalsCanvas.height,
@@ -395,7 +327,6 @@ function initPetals() {
         wobble: Math.random() * Math.PI * 2,
         opacity: Math.random() * 0.28 + 0.12
     }));
-
     petalsRAF = requestAnimationFrame(petalsLoop);
 }
 
@@ -404,31 +335,23 @@ function petalsLoop() {
     const ctx = petalsCtx, c = petalsCanvas;
     ctx.clearRect(0, 0, c.width, c.height);
     petals.forEach(p => {
-        p.y += p.speedY;
-        p.wobble += 0.018;
+        p.y += p.speedY; p.wobble += 0.018;
         p.x += p.speedX + Math.sin(p.wobble) * 0.28;
         p.rotation += p.rotSpeed;
         if (p.y > c.height + 20) { p.y = -20; p.x = Math.random() * c.width; }
-
-        ctx.save();
-        ctx.translate(p.x, p.y);
+        ctx.save(); ctx.translate(p.x, p.y);
         ctx.rotate((p.rotation * Math.PI) / 180);
         ctx.globalAlpha = p.opacity;
-        ctx.beginPath();
-        ctx.moveTo(0, -p.size);
-        ctx.bezierCurveTo( p.size * 0.8, -p.size * 0.5,  p.size * 0.6,  p.size * 0.5, 0,  p.size);
-        ctx.bezierCurveTo(-p.size * 0.6,  p.size * 0.5, -p.size * 0.8, -p.size * 0.5, 0, -p.size);
-        const g = ctx.createRadialGradient(0, 0, 0, 0, 0, p.size);
-        g.addColorStop(0, 'rgba(183,110,121,0.9)');
-        g.addColorStop(1, 'rgba(183,110,121,0.2)');
-        ctx.fillStyle = g;
-        ctx.fill();
-        ctx.restore();
+        ctx.beginPath(); ctx.moveTo(0, -p.size);
+        ctx.bezierCurveTo(p.size*0.8, -p.size*0.5, p.size*0.6, p.size*0.5, 0, p.size);
+        ctx.bezierCurveTo(-p.size*0.6, p.size*0.5, -p.size*0.8, -p.size*0.5, 0, -p.size);
+        const g = ctx.createRadialGradient(0,0,0,0,0,p.size);
+        g.addColorStop(0,'rgba(183,110,121,0.9)'); g.addColorStop(1,'rgba(183,110,121,0.2)');
+        ctx.fillStyle = g; ctx.fill(); ctx.restore();
     });
     petalsRAF = requestAnimationFrame(petalsLoop);
 }
 
-// ── Smooth anchor scroll ─────────────────────────────────────────────────────
 document.querySelectorAll('a[href^="#"]').forEach(a => {
     a.addEventListener('click', e => {
         e.preventDefault();
