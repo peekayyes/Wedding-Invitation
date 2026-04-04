@@ -592,13 +592,105 @@ body.enable-scroll {
 
 
 
-.vintage-paper {
-    opacity: 1;
+/* Sections hidden until JS shows them */
+.hero, .countdown-luxury, .events-luxury, .venue-luxury, .families-section, .things-to-know, .luxury-footer {
+    opacity: 0;
 }
 
-/* GSAP controls visibility — sections start visible except hero */
-.hero {
+.content-visible {
+    opacity: 1 !important;
+    transition: opacity 1s ease !important;
+}
+
+/* Paper emerge */
+.vintage-paper {
     opacity: 0;
+    transform: scale(0.95);
+}
+
+.vintage-paper.emerged {
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 1s ease, transform 1s ease;
+}
+
+/* Hero hidden/bloom */
+.hero-hidden {
+    opacity: 0 !important;
+    pointer-events: none;
+}
+
+.hero-bloom {
+    animation: hero-card-bloom 1.4s ease forwards !important;
+}
+
+@keyframes hero-card-bloom {
+    0%   { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+/* Curtain opening via CSS transition */
+.curtain-overlay.opening .curtain-left  { transform: translateX(-100%); }
+.curtain-overlay.opening .curtain-right { transform: translateX(100%); }
+.curtain-overlay.opening .curtain-rod   { opacity: 0; transform: translateY(-50px); }
+.curtain-overlay.opening .curtain-valance { opacity: 0; transform: translateY(-60px); }
+
+/* Scroll reveals */
+.reveal {
+    opacity: 0;
+    transition: opacity 0.9s ease, transform 0.9s ease;
+}
+.reveal-up { transform: translateY(60px); }
+.reveal-scale { transform: scale(0.85); }
+.reveal.visible {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+}
+
+/* Heart CSS animations */
+.curtain-heart.heart-active {
+    animation: heart-grand-arrive 1.4s cubic-bezier(0.22, 1.4, 0.36, 1) 0.3s forwards;
+}
+
+@keyframes heart-grand-arrive {
+    0%   { transform: translate(-50%, calc(-50% + 80px)) scale(0.3); opacity: 0; }
+    50%  { transform: translate(-50%, calc(-50% - 20px)) scale(1.12); opacity: 1; }
+    75%  { transform: translate(-50%, calc(-50% + 8px))  scale(0.97); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+.curtain-heart.heart-depart {
+    animation: heart-grand-depart 0.9s cubic-bezier(0.4, 0, 0.6, 1) forwards !important;
+}
+
+@keyframes heart-grand-depart {
+    0%   { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    30%  { transform: translate(-50%, calc(-50% - 30px)) scale(1.08); opacity: 1; }
+    100% { transform: translate(-50%, calc(-50% - 220px)) scale(0.15); opacity: 0; }
+}
+
+/* Wing flap CSS animations */
+.wing-left {
+    animation: flap-left 1.8s ease-in-out infinite;
+}
+.wing-right {
+    animation: flap-right 1.8s ease-in-out infinite;
+}
+.heart-body {
+    animation: heart-bob 2.4s ease-in-out infinite;
+}
+
+@keyframes flap-left {
+    0%, 100% { transform: scaleY(1) rotate(0deg); }
+    40%, 60% { transform: scaleY(0.65) rotate(-4deg); }
+}
+@keyframes flap-right {
+    0%, 100% { transform: scaleY(1) rotate(0deg); }
+    40%, 60% { transform: scaleY(0.65) rotate(4deg); }
+}
+@keyframes heart-bob {
+    0%, 100% { transform: translateY(0px); }
+    50%       { transform: translateY(-8px); }
 }
 
 /* ══ FAMILIES SECTION ══ */
@@ -817,7 +909,7 @@ body.enable-scroll {
     pointer-events: none;
 }
 
-/* Scroll reveals handled by GSAP ScrollTrigger */
+/* Scroll reveals handled by IntersectionObserver */
 
 /* Countdown — GSAP handles flip, hide .flip-next */
 .flip-next { display: none; }
@@ -908,14 +1000,23 @@ body.enable-scroll {
 .curtain-overlay.opening { pointer-events: none; }
 
 /* ── Panels ── */
+/* Curtain panel transitions */
 .curtain-left,
 .curtain-right {
     position: absolute;
     top: -2%;
     width: 52%;
     height: 106%;
-    will-change: transform;
     overflow: hidden;
+    transition: transform 2.8s cubic-bezier(0.76, 0, 0.24, 1);
+}
+
+.curtain-rod {
+    transition: opacity 1.2s ease, transform 1.2s ease;
+}
+
+.curtain-valance {
+    transition: opacity 1.4s ease, transform 1.4s ease;
 }
 
 .curtain-left  { left: 0;  transform-origin: left center; }
@@ -1181,7 +1282,7 @@ body.enable-scroll {
     50%       { opacity: 0.85; }
 }
 
-/* Heart position — GSAP drives all transforms and opacity */
+/* Heart position */
 .curtain-heart {
     position: absolute;
     top: 50%;
@@ -1189,11 +1290,11 @@ body.enable-scroll {
     z-index: 10004;
     width: clamp(220px, 40vw, 360px);
     opacity: 0;
+    transform: translate(-50%, calc(-50% + 80px)) scale(0.3);
     pointer-events: none;
     filter:
         drop-shadow(0 0 30px rgba(232,69,106,0.8))
-        drop-shadow(0 0 60px rgba(212,175,55,0.4))
-        drop-shadow(0 0 100px rgba(232,69,106,0.2));
+        drop-shadow(0 0 60px rgba(212,175,55,0.4));
 }
 
 /* ── Tap to open prompt ── */
@@ -1207,7 +1308,7 @@ body.enable-scroll {
     overflow: visible;
 }
 
-/* Wing and heart-body animations handled by GSAP */
+/* Wing and heart-body animations — CSS driven */
 .wing-left  { transform-origin: 158px 105px; }
 .wing-right { transform-origin: 182px 105px; }
 .heart-body { transform-origin: 170px 115px; }
