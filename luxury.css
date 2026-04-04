@@ -1198,42 +1198,7 @@ body.enable-scroll {
 
 /* ── Tap to open prompt ── */
 .curtain-tap {
-    position: absolute;
-    bottom: 15%;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 10005;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    animation: tap-breathe 2s ease-in-out infinite;
-}
-
-.tap-icon {
-    font-size: 2.5rem;
-    filter: drop-shadow(0 0 12px rgba(212,175,55,0.6));
-    animation: tap-bounce 1.5s ease-in-out infinite;
-}
-
-.tap-text {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: rgba(212,175,55,0.9);
-    text-shadow: 0 0 10px rgba(212,175,55,0.4);
-}
-
-@keyframes tap-bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-}
-
-@keyframes tap-breathe {
-    0%, 100% { opacity: 0.7; }
-    50% { opacity: 1; }
+    display: none;
 }
 
 .winged-heart {
